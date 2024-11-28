@@ -156,7 +156,7 @@ class CameraModel:
         return projected_points - image_points
 
     def as_dict(self, alpha: float = 0.0) -> Dict:
-        undistorted = self._get_undistorted_camera_model_impl(alpha)
+        undistorted = self.get_undistorted_camera_model(alpha)
         p = np.zeros((3, 4))
         p[0:3, 0:3] = undistorted.k
 
@@ -191,18 +191,22 @@ class CameraModel:
     def from_dict(self, d):
         self.width = d["image_width"]
         self.height = d["image_height"]
-        self.k = np.array(d["camera_matrix"]["data"]).reshape(
-            d["camera_matrix"]["rows"], d["camera_matrix"]["cols"]
+        self.k = (
+            np.array(d["camera_matrix"]["data"])
+            .reshape(d["camera_matrix"]["rows"], d["camera_matrix"]["cols"])
+            .astype(np.float64)
         )
-        self.d = np.array(d["distortion_model"]["data"]).reshape(
-            d["distortion_model"]["rows"], d["distortion_model"]["cols"]
+        self.d = (
+            np.array(d["distortion_model"]["data"])
+            .reshape(d["distortion_model"]["rows"], d["distortion_model"]["cols"])
+            .astype(np.float64)
         )
 
     def update_config(self, **kwargs):
         """Update the camera model configuration."""
         self._update_config_impl(**kwargs)
 
-    def _get_undistorted_camera_model_impl(self, alpha: float):
+    def get_undistorted_camera_model(self, alpha: float):
         """Compute the undistorted version of the camera model."""
         undistorted_k, _ = cv2.getOptimalNewCameraMatrix(
             self.k, self.d, (self.width, self.height), alpha
@@ -212,9 +216,9 @@ class CameraModel:
             k=undistorted_k, d=np.zeros_like(self.d), height=self.height, width=self.width
         )
 
-    def _rectify_impl(self, img: np.array, alpha=0.0) -> np.array:
+    def rectify(self, img: np.array, alpha=0.0) -> np.array:
         """Rectifies an image using the current camera model. Alpha is a value in the [0,1] range to regulate how the rectified image is cropped. 0 means that all the pixels in the rectified image are valid whereas 1 keeps all the original pixels from the unrectified image into the rectifies one, filling with zeroes the invalid pixels."""
-        if np.abs(self.d).sum() == 0:
+        if np.all(self.d == 0.0):
             return img
 
         if self._cached_undistorted_model is None or alpha != self._cached_undistortion_alpha:
