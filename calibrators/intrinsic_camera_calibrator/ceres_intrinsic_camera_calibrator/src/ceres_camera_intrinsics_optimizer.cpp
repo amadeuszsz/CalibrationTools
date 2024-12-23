@@ -27,7 +27,6 @@
 
 #include <ceres/ceres.h>
 #include <ceres/loss_function.h>
-#include <cv_bridge/cv_bridge.h>
 
 #include <algorithm>
 #include <cstdio>

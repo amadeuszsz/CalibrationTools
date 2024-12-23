@@ -16,16 +16,12 @@ find_package(pybind11 REQUIRED)
 
 autoware_package()
 
-# These need to be called after autoware_package to avoid being overwritten
-find_package(Boost REQUIRED COMPONENTS system serialization filesystem)
-
 # Optimizer as a library
 ament_auto_add_library(${PROJECT_NAME} SHARED
   src/ceres_camera_intrinsics_optimizer.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}
-  ${Boost_LIBRARIES}
   ${OpenCV_LIBS}
   ${CERES_LIBRARIES}
 )
@@ -47,7 +43,6 @@ ament_auto_add_executable(${PROJECT_NAME}_test
 )
 
 target_link_libraries(${PROJECT_NAME}_test
-  ${Boost_LIBRARIES}
   ${OpenCV_LIBS}
   ${CERES_LIBRARIES}
   ${PROJECT_NAME}
