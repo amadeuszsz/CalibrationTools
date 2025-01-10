@@ -41,6 +41,8 @@ class OpenCVCalibrator(Calibrator):
         self.enable_prism_model = Parameter(bool, value=False, min_value=False, max_value=True)
         self.fix_principal_point = Parameter(bool, value=False, min_value=False, max_value=True)
         self.fix_aspect_ratio = Parameter(bool, value=False, min_value=False, max_value=True)
+        self.use_lu_decomposition = Parameter(bool, value=False, min_value=False, max_value=True)
+        self.use_qr_decomposition = Parameter(bool, value=False, min_value=False, max_value=True)
 
         self.set_parameters(**cfg)
 
@@ -62,6 +64,8 @@ class OpenCVCalibrator(Calibrator):
                 enable_prism_model=self.enable_prism_model.value,
                 fix_principal_point=self.fix_principal_point.value,
                 fix_aspect_ratio=self.fix_aspect_ratio.value,
+                use_lu_decomposition=self.use_lu_decomposition.value,
+                use_qr_decomposition=self.use_qr_decomposition.value,
             )
         camera_model.calibrate(
             height=height,

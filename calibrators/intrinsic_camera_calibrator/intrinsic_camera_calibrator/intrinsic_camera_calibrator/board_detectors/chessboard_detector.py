@@ -33,6 +33,7 @@ class ChessBoardDetector(BoardDetector):
         self.resized_detection = Parameter(bool, value=True, min_value=False, max_value=True)
         self.resized_max_resolution = Parameter(int, value=1000, min_value=500, max_value=3000)
         self.sub_pixel_refinement = Parameter(bool, value=True, min_value=False, max_value=True)
+        self.set_parameters(**kwargs["cfg"])
 
     def detect(self, img: np.array, stamp: float):
         """Slot to detect boards from an image. Results are sent through the detection_results signals."""

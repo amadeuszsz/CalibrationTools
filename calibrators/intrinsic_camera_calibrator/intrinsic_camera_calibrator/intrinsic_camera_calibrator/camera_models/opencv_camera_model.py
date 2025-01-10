@@ -65,6 +65,8 @@ class OpenCVCameraModel(CameraModel):
         enable_prism_model: bool = False,
         fix_principal_point: bool = False,
         fix_aspect_ratio: bool = False,
+        use_lu_decomposition: bool = False,
+        use_qr_decomposition: bool = False,
         **kwargs
     ):
         """Update parameters."""
@@ -80,6 +82,8 @@ class OpenCVCameraModel(CameraModel):
         self.flags = toggle_flag(self.flags, cv2.CALIB_THIN_PRISM_MODEL, enable_prism_model)
         self.flags = toggle_flag(self.flags, cv2.CALIB_FIX_PRINCIPAL_POINT, fix_principal_point)
         self.flags = toggle_flag(self.flags, cv2.CALIB_FIX_ASPECT_RATIO, fix_aspect_ratio)
+        self.flags = toggle_flag(self.flags, cv2.CALIB_USE_LU, use_lu_decomposition)
+        self.flags = toggle_flag(self.flags, cv2.CALIB_USE_QR, use_qr_decomposition)
         self.flags = toggle_flag(
             self.flags, cv2.CALIB_ZERO_TANGENT_DIST, not use_tangential_distortion
         )

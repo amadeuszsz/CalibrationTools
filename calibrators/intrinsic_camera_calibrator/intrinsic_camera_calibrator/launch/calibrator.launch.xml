@@ -1,5 +1,5 @@
 <launch>
-  <arg name="config_file" default="intrinsics_calibrator.yaml"/>
+  <arg name="config_file" default="general_intrinsics_calibrator.yaml"/>
   <arg name="config_path" default="$(find-pkg-share intrinsic_camera_calibrator)/config/$(var config_file)"/>
   <!-- 0: INFO, 1: WARNING, 2: ERROR, 3: FATAL -->
   <arg name="severity" default="0"/>

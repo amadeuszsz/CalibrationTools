@@ -197,8 +197,8 @@ class CameraModel:
             .astype(np.float64)
         )
         self.d = (
-            np.array(d["distortion_model"]["data"])
-            .reshape(d["distortion_model"]["rows"], d["distortion_model"]["cols"])
+            np.array(d["distortion_coefficients"]["data"])
+            .reshape(d["distortion_coefficients"]["rows"], d["distortion_coefficients"]["cols"])
             .astype(np.float64)
         )
 

@@ -44,6 +44,8 @@ class BoardDetection:
         self._cached_normalized_skew = None
         self._cached_normalized_size = None
         self._cached_linear_error_rms = None
+        self._cached_linear_error_rows_rms = None
+        self._cached_linear_error_cols_rms = None
         self._cached_flattened_cell_sizes = None
         self._cached_center_2d = None
 
@@ -97,6 +99,10 @@ class BoardDetection:
 
     def get_linear_error_rms(self) -> float:
         """Return RMS error product of the projection of the lines of each row of the detection into the line produced by the first and line point of each row."""
+        raise NotImplementedError
+
+    def restart_linearity_heatmap(self):
+        """Restart the linearity heatmap."""
         raise NotImplementedError
 
     def get_center_2d(self) -> np.array:
@@ -232,3 +238,27 @@ class BoardDetection:
         last_image_points = last.get_flattened_image_points()
 
         return np.linalg.norm(current_image_points - last_image_points, axis=-1).mean()
+
+    def get_aspect_ratio_pattern(self, model: CameraModel) -> float:
+        """Get the aspect ratio using the calibration pattern, which should be squared."""
+        tilt, pan = self.get_rotation_angles(model)
+        acceptance_angle = 10
+
+        # Do not update if the board has large out-of-plane rotations since calculations will not be accurate
+        if np.abs(tilt) > acceptance_angle or np.abs(pan) > acceptance_angle:
+            return 0.0
+        # Calculate distances between adjacent corners
+        aspect_ratio = 0
+        count = 0
+        for j in range(self.rows - 1):
+            for i in range(self.cols - 1):
+                p = self.image_points[j, i]
+                point_col = self.image_points[j + 1, i]
+                point_row = self.image_points[j, i + 1]
+                horizontal_distance = np.linalg.norm(p - point_row)
+                vertical_distance = np.linalg.norm(p - point_col)
+                aspect_ratio = aspect_ratio + (horizontal_distance / vertical_distance)
+                count += 1
+        aspect_ratio = aspect_ratio / ((self.rows - 1) * (self.cols - 1))
+
+        return aspect_ratio

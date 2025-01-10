@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
+import logging
+import os
 
 from PySide2.QtCore import Signal
 from PySide2.QtWidgets import QComboBox
@@ -23,6 +26,7 @@ from PySide2.QtWidgets import QPushButton
 from PySide2.QtWidgets import QRadioButton
 from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtWidgets import QWidget
+from ament_index_python.packages import get_package_share_directory
 from intrinsic_camera_calibrator.board_parameters.board_parameters_factory import (
     make_board_parameters,
 )
@@ -37,6 +41,7 @@ from intrinsic_camera_calibrator.views.image_files_view import ImageFilesView
 from intrinsic_camera_calibrator.views.parameter_view import ParameterView
 from intrinsic_camera_calibrator.views.ros_bag_view import RosBagView
 from intrinsic_camera_calibrator.views.ros_topic_view import RosTopicView
+import yaml
 
 
 class InitializationView(QWidget):
@@ -60,6 +65,11 @@ class InitializationView(QWidget):
             for board_type in BoardEnum
         }
 
+        # Get the package share directory
+        package_share_dir = get_package_share_directory("intrinsic_camera_calibrator")
+        # Get the path to the config directory
+        config_dir = os.path.join(package_share_dir, "config")
+
         self.layout = QVBoxLayout(self)
 
         # Source
@@ -75,6 +85,52 @@ class InitializationView(QWidget):
         source_layout.addWidget(self.data_source_combobox)
         self.source_group.setLayout(source_layout)
 
+        # Calibration parameters
+        self.params_combobox = QComboBox()
+
+        # Add all YAML files from the config directory
+        for file in os.listdir(config_dir):
+            if file.endswith(".yaml"):  # and file != 'intrinsics_calibrator.yaml':
+                file_path = os.path.join(config_dir, file)
+                self.params_combobox.addItem(
+                    file.split(".")[0].replace("_", " ").title(), file_path
+                )
+        # Add "Load File" option at the end
+        self.params_combobox.addItem("Load File", None)
+
+        def on_params_combo_box_changed(index):
+            selected_params_file = self.params_combobox.itemData(index)
+            if selected_params_file is None:
+                file_name, _ = QFileDialog.getOpenFileName(
+                    self, "Open File", "", "All Files (*.*);;Text Files (*.yaml)"
+                )
+                if file_name:
+                    logging.info(f"Selected file: {file_name}")
+                    config_file_path = file_name
+            else:
+                config_file_path = selected_params_file
+
+            logging.info(f"Selected config file={config_file_path}")
+
+            if config_file_path:
+                cfg = {}
+                try:
+                    with open(config_file_path, "r") as stream:
+                        cfg = yaml.safe_load(stream)
+                        self.cfg = defaultdict(dict, cfg)
+                        self.update_board_type()
+                        logging.info("Successfully opened parameters file")
+                except Exception as e:
+                    logging.error(f"Could not load the parameters from the YAML file ({e})")
+
+        self.params_combobox.currentIndexChanged.connect(on_params_combo_box_changed)
+
+        self.params_group = QGroupBox("Parameters profile")
+        self.params_group.setFlat(True)
+        params_layout = QVBoxLayout()
+        params_layout.addWidget(self.params_combobox)
+        self.params_group.setLayout(params_layout)
+
         # Board
         self.board_group = QGroupBox("Board options")
         self.board_group.setFlat(True)
@@ -85,12 +141,7 @@ class InitializationView(QWidget):
         for board_type in BoardEnum:
             self.board_type_combobox.addItem(board_type.value["display"], board_type)
 
-        if self.cfg["board_type"] != "":
-            self.board_type_combobox.setCurrentIndex(
-                BoardEnum.from_name(self.cfg["board_type"]).get_id()
-            )
-        else:
-            self.board_type_combobox.setCurrentIndex(0)
+        self.update_board_type()
 
         def board_parameters_on_closed():
             self.setEnabled(True)
@@ -136,6 +187,8 @@ class InitializationView(QWidget):
             )
             self.initial_intrinsics = load_intrinsics(intrinsics_path)
             self.evaluation_radio_button.setEnabled(True)
+            self.training_radio_button.setEnabled(False)
+            self.evaluation_radio_button.setChecked(True)
 
         self.load_intrinsics_button.clicked.connect(load_intrinsics_button_callback)
 
@@ -149,10 +202,24 @@ class InitializationView(QWidget):
         self.layout.addWidget(self.source_group)
         self.layout.addWidget(self.board_group)
         self.layout.addWidget(self.mode_group)
+        self.layout.addWidget(self.params_group)
         self.layout.addWidget(self.initial_intrinsics_group)
         self.layout.addWidget(self.start_button)
 
         self.show()
+
+    def update_board_type(self):
+        if self.cfg["board_type"] != "":
+            self.board_type_combobox.setCurrentIndex(
+                BoardEnum.from_name(self.cfg["board_type"]).get_id()
+            )
+        else:
+            self.board_type_combobox.setCurrentIndex(0)
+
+        self.board_parameters_dict = {
+            board_type: make_board_parameters(board_type, cfg=self.cfg["board_parameters"])
+            for board_type in BoardEnum
+        }
 
     def on_start(self):
         """Start the calibration process after receiving the user settings."""
@@ -171,6 +238,7 @@ class InitializationView(QWidget):
                 board_type,
                 self.board_parameters_dict[board_type],
                 self.initial_intrinsics,
+                self.cfg,
             )
             self.close()
 
