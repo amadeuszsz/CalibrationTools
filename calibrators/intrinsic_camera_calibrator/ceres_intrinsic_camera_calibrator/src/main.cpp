@@ -30,10 +30,10 @@
 
 int main(int argc, char ** argv)
 {
-  if (argc != 6) {
+  if (argc != 7) {
     std::cout << "Usage: " << argv[0]
               << " <data_path> <num_radial_coeffs> <use_tangential_distortion> "
-                 "<num_rational_coeffs> <regularization_weight>"
+                 "<num_rational_coeffs> <coeffs_regularization_weight> <fov_regularization_weight>"
               << std::endl;
     return 1;
   }
@@ -46,7 +46,10 @@ int main(int argc, char ** argv)
   int num_radial_distortion_coeffs = atoi(argv[2]);
   bool use_tangent_distortion = atoi(argv[3]);
   int num_rational_distortion_coeffs = atoi(argv[4]);
-  double regularization_weight = atof(argv[5]);
+  double coeffs_regularization_weight = atof(argv[5]);
+  double fov_regularization_weight = atof(argv[6]);
+  int width = 0;
+  int height = 0;
 
   // Placeholders
   std::vector<std::vector<cv::Point3f>> all_object_points;
@@ -99,6 +102,14 @@ int main(int argc, char ** argv)
   for (std::size_t i = 0; i < image_paths.size(); ++i) {
     cv::Mat grayscale_img =
       cv::imread(image_paths[i], cv::IMREAD_GRAYSCALE | cv::IMREAD_IGNORE_ORIENTATION);
+
+    if (width == 0 || height == 0) {
+      width = grayscale_img.cols;
+      height = grayscale_img.rows;
+    } else {
+      assert(width == grayscale_img.cols);
+      assert(height == grayscale_img.rows);
+    }
 
     assert(size.height == -1 || size.height == grayscale_img.rows);
     assert(size.width == -1 || size.width == grayscale_img.cols);
@@ -249,7 +260,9 @@ int main(int argc, char ** argv)
   optimizer.setRadialDistortionCoefficients(num_radial_distortion_coeffs);
   optimizer.setTangentialDistortion(use_tangent_distortion);
   optimizer.setRationalDistortionCoefficients(num_rational_distortion_coeffs);
-  optimizer.setRegularizationWeight(regularization_weight);
+  optimizer.setCoeffsRegularizationWeight(coeffs_regularization_weight);
+  optimizer.setFovRegularizationWeight(fov_regularization_weight);
+  optimizer.setSourceDimensions(width, height);
   optimizer.setVerbose(true);
   optimizer.setData(
     mini_opencv_camera_matrix, mini_opencv_dist_coeffs, calibration_object_points,

@@ -70,9 +70,22 @@ public:
 
   /*!
    * Sets the regularization weight for the distortion coefficients
-   * @param[in] regularization_weight the regularization weight
+   * @param[in] coeffs_regularization_weight the regularization weight
    */
-  void setRegularizationWeight(double regularization_weight);
+  void setCoeffsRegularizationWeight(double coeffs_regularization_weight);
+
+  /*!
+   * Sets the regularization weight for the field of view
+   * @param[in] fov_regularization_weight the regularization weight
+   */
+  void setFovRegularizationWeight(double fov_regularization_weight);
+
+  /*!
+   * Sets the source dimensions
+   * @param[in] width the width of the source image
+   * @param[in] height the height of the source image
+   */
+  void setSourceDimensions(int width, int height);
 
   /*!
    * Sets the verbose mode
@@ -132,7 +145,10 @@ protected:
   int radial_distortion_coefficients_;
   bool use_tangential_distortion_;
   int rational_distortion_coefficients_;
-  double regularization_weight_;
+  double coeffs_regularization_weight_;
+  double fov_regularization_weight_;
+  int width_;
+  int height_;
   bool verbose_;
   cv::Mat_<double> camera_matrix_;
   cv::Mat_<double> distortion_coeffs_;
