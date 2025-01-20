@@ -21,6 +21,7 @@
 struct DistortionCoefficientsResidual
 {
   static constexpr int RESIDUAL_DIM = 8;
+  static constexpr double LOSS_THRESHOLD = 5.0;
 
   DistortionCoefficientsResidual(
     int radial_distortion_coeffs, bool use_tangential_distortion, int rational_distortion_coeffs)
@@ -56,16 +57,28 @@ struct DistortionCoefficientsResidual
     const T & k6 =
       rational_distortion_coeffs_ > 2 ? camera_intrinsics[distortion_index++] : null_value;
 
-    residuals[0] = k1;
-    residuals[1] = k2;
-    residuals[2] = k3;
-    residuals[3] = p1;
-    residuals[4] = p2;
-    residuals[5] = k4;
-    residuals[6] = k5;
-    residuals[7] = k6;
+    residuals[0] = getResidual(k1);
+    residuals[1] = getResidual(k2);
+    residuals[2] = getResidual(k3);
+    residuals[3] = getResidual(p1);
+    residuals[4] = getResidual(p2);
+    residuals[5] = getResidual(k4);
+    residuals[6] = getResidual(k5);
+    residuals[7] = getResidual(k6);
 
     return true;
+  }
+
+  /*!
+   * Calculates the residual for a given distortion coefficient
+   * @param[in] value The distortion coefficient
+   * @returns The residual
+   */
+  template <typename T>
+  T getResidual(const T & value) const
+  {
+    return ceres::abs(value) > LOSS_THRESHOLD ? ceres::pow(ceres::abs(value) - LOSS_THRESHOLD, 2)
+                                              : T(0.0);
   }
 
   /*!
