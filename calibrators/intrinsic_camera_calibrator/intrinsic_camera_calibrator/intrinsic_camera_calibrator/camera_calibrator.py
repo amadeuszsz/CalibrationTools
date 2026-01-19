@@ -16,6 +16,11 @@
 from collections import defaultdict
 import copy
 import logging
+import multiprocessing
+try:
+    multiprocessing.set_start_method('spawn', force=True)
+except RuntimeError:
+    pass
 from optparse import OptionParser
 import os
 import signal
@@ -1384,7 +1389,7 @@ def main(args=None):
         sys.exit(app.exec_())
     except (KeyboardInterrupt, SystemExit):
         logging.info("Received sigint. Quitting...")
-        rclpy.shutdown()
+        rclpy.try_shutdown()
 
 
 def sigint_handler(*args):
